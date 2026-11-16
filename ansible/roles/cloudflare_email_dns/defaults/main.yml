@@ -1,0 +1,24 @@
+---
+# Strato email DNS for the active domain.
+#
+# Strato's current customer inbound gateway is smtp.rzone.de. The old
+# mx01.strato.de / mx02.strato.de names no longer resolve.
+cf_email_mx_content: "smtp.rzone.de"
+cf_email_mx_priority: 5
+
+# Strato recommends this include for customer domains. Keep ~all while the
+# mailbox is being warmed up; switch to -all after the sending path is proven.
+cf_email_spf_content: "v=spf1 include:_spf.strato.com ~all"
+
+# Strato publishes two DKIM selectors by CNAME so key rotation happens at
+# Strato. Add a DMARC record at p=none until live delivery is verified.
+cf_email_records:
+  - name: "strato-dkim-0002._domainkey.{{ base_domain }}"
+    type: "CNAME"
+    content: "strato-dkim-0002._domainkey.rzone.de"
+  - name: "strato-dkim-0003._domainkey.{{ base_domain }}"
+    type: "CNAME"
+    content: "strato-dkim-0003._domainkey.rzone.de"
+  - name: "_dmarc.{{ base_domain }}"
+    type: "TXT"
+    content: "v=DMARC1; p=none; pct=100"

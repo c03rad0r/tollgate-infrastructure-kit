@@ -1,0 +1,8 @@
+---
+- name: Deploy orangesync email DNS records
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  roles:
+    - cloudflare_email_dns

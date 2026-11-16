@@ -61,3 +61,27 @@ Caddy automatically obtains wildcard TLS certificates from Let's Encrypt using D
 ### "DNS record already exists"
 - This is handled automatically — existing records are skipped
 - If you need to update an IP, delete the old record in the Cloudflare dashboard and re-run deployment
+
+## Email DNS (Strato)
+
+`playbooks/56-email-dns.yml` manages the Strato email records for the active
+`base_domain`:
+
+| Type | Name | Value |
+|---|---|---|
+| MX | `orangesync.tech` | `smtp.rzone.de` priority 5 |
+| TXT | `orangesync.tech` | `v=spf1 include:_spf.strato.com ~all` |
+| CNAME | `strato-dkim-0002._domainkey.orangesync.tech` | `strato-dkim-0002._domainkey.rzone.de` |
+| CNAME | `strato-dkim-0003._domainkey.orangesync.tech` | `strato-dkim-0003._domainkey.rzone.de` |
+| TXT | `_dmarc.orangesync.tech` | `v=DMARC1; p=none; pct=100` |
+
+The old `mx01.strato.de` / `mx02.strato.de` MX targets no longer resolve, so
+inbound mail to the domain is broken until this playbook is applied. The role
+leaves unrelated TXT verification records intact.
+
+```bash
+cd ~/tik-work/ansible
+CLOUDFLARE_API_TOKEN=... ansible-playbook playbooks/56-email-dns.yml
+```
+
+See `ansible/roles/cloudflare_email_dns/README.md` for verification commands.

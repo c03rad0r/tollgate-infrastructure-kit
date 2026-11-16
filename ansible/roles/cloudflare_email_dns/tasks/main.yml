@@ -1,0 +1,187 @@
+---
+- name: Verify the Cloudflare token for email DNS
+  uri:
+    url: "https://api.cloudflare.com/client/v4/user/tokens/verify"
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+    return_content: true
+  register: cf_email_token_verify
+  failed_when: cf_email_token_verify.status != 200
+  delegate_to: localhost
+  become: false
+  no_log: true
+
+- name: Resolve the Cloudflare zone for email DNS
+  uri:
+    url: "https://api.cloudflare.com/client/v4/zones?name={{ cloudflare_zone_name }}"
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+    return_content: true
+  register: cf_email_zone_lookup
+  when: cloudflare_zone_id == ''
+  delegate_to: localhost
+  become: false
+
+- name: Set the email DNS zone id
+  set_fact:
+    cf_email_zone_id: >-
+      {{ cloudflare_zone_id if cloudflare_zone_id != ''
+         else (cf_email_zone_lookup.json.result | first).id }}
+  delegate_to: localhost
+  become: false
+
+- name: Read existing Cloudflare DNS records
+  uri:
+    url: "https://api.cloudflare.com/client/v4/zones/{{ cf_email_zone_id }}/dns_records?per_page=500"
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+    return_content: true
+  register: cf_email_dns_records
+  delegate_to: localhost
+  become: false
+
+- name: Identify existing root MX records
+  set_fact:
+    cf_email_root_mx: >-
+      {{ cf_email_dns_records.json.result
+         | selectattr('type', 'equalto', 'MX')
+         | selectattr('name', 'equalto', base_domain)
+         | list }}
+  delegate_to: localhost
+  become: false
+
+- name: Remove obsolete root MX records
+  uri:
+    url: "https://api.cloudflare.com/client/v4/zones/{{ cf_email_zone_id }}/dns_records/{{ item.id }}"
+    method: DELETE
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+    status_code: [200, 404]
+  loop: "{{ cf_email_root_mx }}"
+  when: (item.content | regex_replace('\\.$', '')) != cf_email_mx_content
+  delegate_to: localhost
+  become: false
+
+- name: Ensure the Strato MX record
+  vars:
+    cf_email_mx_matches: >-
+      {{ cf_email_root_mx
+         | selectattr('content', 'defined')
+         | selectattr('content', 'match', '^smtp\\.rzone\\.de\\.?$')
+         | list }}
+    cf_email_mx_id: "{{ (cf_email_mx_matches | first).id if (cf_email_mx_matches | length > 0) else '' }}"
+  uri:
+    url: >-
+      {{ ('https://api.cloudflare.com/client/v4/zones/' + cf_email_zone_id + '/dns_records/' + cf_email_mx_id)
+         if cf_email_mx_id
+         else ('https://api.cloudflare.com/client/v4/zones/' + cf_email_zone_id + '/dns_records') }}
+    method: "{{ 'PUT' if cf_email_mx_id else 'POST' }}"
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+      Content-Type: "application/json"
+    body:
+      type: MX
+      name: "{{ base_domain }}"
+      content: "{{ cf_email_mx_content }}"
+      priority: "{{ cf_email_mx_priority | int }}"
+      ttl: 300
+      proxied: false
+    body_format: json
+    status_code: [200, 400]
+  delegate_to: localhost
+  become: false
+
+- name: Identify existing root TXT records
+  set_fact:
+    cf_email_root_txt: >-
+      {{ cf_email_dns_records.json.result
+         | selectattr('type', 'equalto', 'TXT')
+         | selectattr('name', 'equalto', base_domain)
+         | list }}
+  delegate_to: localhost
+  become: false
+
+- name: Identify existing SPF TXT records
+  set_fact:
+    cf_email_spf_records: >-
+      {{ cf_email_root_txt
+         | selectattr('content', 'defined')
+         | selectattr('content', 'match', '^v=spf1')
+         | list }}
+  delegate_to: localhost
+  become: false
+
+- name: Ensure the SPF TXT record
+  vars:
+    cf_email_spf_id: "{{ (cf_email_spf_records | first).id if (cf_email_spf_records | length > 0) else '' }}"
+  uri:
+    url: >-
+      {{ ('https://api.cloudflare.com/client/v4/zones/' + cf_email_zone_id + '/dns_records/' + cf_email_spf_id)
+         if cf_email_spf_id
+         else ('https://api.cloudflare.com/client/v4/zones/' + cf_email_zone_id + '/dns_records') }}
+    method: "{{ 'PUT' if cf_email_spf_id else 'POST' }}"
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+      Content-Type: "application/json"
+    body:
+      type: TXT
+      name: "{{ base_domain }}"
+      content: "{{ cf_email_spf_content }}"
+      ttl: 300
+      proxied: false
+    body_format: json
+    status_code: [200, 400]
+  delegate_to: localhost
+  become: false
+
+- name: Remove duplicate SPF TXT records
+  uri:
+    url: "https://api.cloudflare.com/client/v4/zones/{{ cf_email_zone_id }}/dns_records/{{ item.id }}"
+    method: DELETE
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+    status_code: [200, 404]
+  loop: "{{ cf_email_spf_records[1:] | default([]) }}"
+  delegate_to: localhost
+  become: false
+
+- name: Ensure DKIM and DMARC DNS records
+  vars:
+    cf_email_record_matches: >-
+      {{ cf_email_dns_records.json.result
+         | selectattr('name', 'equalto', item.name)
+         | selectattr('type', 'equalto', item.type)
+         | list }}
+    cf_email_record_id: "{{ (cf_email_record_matches | first).id if (cf_email_record_matches | length > 0) else '' }}"
+  uri:
+    url: >-
+      {{ ('https://api.cloudflare.com/client/v4/zones/' + cf_email_zone_id + '/dns_records/' + cf_email_record_id)
+         if cf_email_record_id
+         else ('https://api.cloudflare.com/client/v4/zones/' + cf_email_zone_id + '/dns_records') }}
+    method: "{{ 'PUT' if cf_email_record_id else 'POST' }}"
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+      Content-Type: "application/json"
+    body:
+      type: "{{ item.type }}"
+      name: "{{ item.name }}"
+      content: "{{ item.content }}"
+      ttl: 300
+      proxied: false
+    body_format: json
+    status_code: [200, 400]
+  loop: "{{ cf_email_records }}"
+  delegate_to: localhost
+  become: false
+
+- name: Show the email DNS summary
+  debug:
+    msg: |
+      Email DNS for {{ base_domain }}:
+        MX  {{ cf_email_mx_priority }} {{ cf_email_mx_content }}
+        TXT {{ cf_email_spf_content }}
+      {% for record in cf_email_records %}
+        {{ record.type }} {{ record.name }} -> {{ record.content }}
+      {% endfor %}
+  delegate_to: localhost
+  become: false
