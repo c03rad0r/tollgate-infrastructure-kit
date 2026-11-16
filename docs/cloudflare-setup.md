@@ -85,3 +85,10 @@ CLOUDFLARE_API_TOKEN=... ansible-playbook playbooks/56-email-dns.yml
 ```
 
 See `ansible/roles/cloudflare_email_dns/README.md` for verification commands.
+
+Verification is available without a Cloudflare token and bypasses local resolver
+caches by using Cloudflare DNS-over-HTTPS:
+
+```bash
+scripts/verify-email-dns.sh orangesync.tech
+```

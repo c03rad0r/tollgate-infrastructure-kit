@@ -30,6 +30,13 @@ idempotent.
 ## Verify
 
 ```bash
+scripts/verify-email-dns.sh orangesync.tech
+```
+
+The script uses Cloudflare DNS-over-HTTPS so a local resolver's negative cache
+cannot hide a freshly created record. Raw checks:
+
+```bash
 dig +short MX orangesync.tech
 dig +short TXT orangesync.tech
 dig +short CNAME strato-dkim-0002._domainkey.orangesync.tech
