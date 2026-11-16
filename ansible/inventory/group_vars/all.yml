@@ -176,7 +176,6 @@ cloudflare_shared_subdomains:
   - git
   - services
   - routstr
-  - vote
   - workshop
   - releases
   - ci

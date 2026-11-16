@@ -65,6 +65,28 @@
     selectattr('content', 'equalto', machine_ip) |
     list | length == 0
 
+- name: Create/update the vote A record on vps2
+  uri:
+    url: >-
+      {{ "https://api.cloudflare.com/client/v4/zones/" + cloudflare_zone_id_resolved + "/dns_records/" +
+         ((cf_record_map | default({})).get('vote.' + base_domain, []) | first).id
+         if ((cf_record_map | default({})).get('vote.' + base_domain, []) | length > 0)
+         else "https://api.cloudflare.com/client/v4/zones/" + cloudflare_zone_id_resolved + "/dns_records" }}
+    method: >-
+      {{ 'PUT' if ((cf_record_map | default({})).get('vote.' + base_domain, []) | length > 0) else 'POST' }}
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+      Content-Type: "application/json"
+    body:
+      type: A
+      name: "vote.{{ base_domain }}"
+      content: "{{ machine_ip }}"
+      ttl: 300
+      proxied: false
+    body_format: json
+    status_code: [200, 400]
+  when: machine_id | default('') == 'vps2'
+
 - name: Create/update A records for per-machine numbered subdomains
   uri:
     url: >-

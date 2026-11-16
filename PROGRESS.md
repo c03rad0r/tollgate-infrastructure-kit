@@ -465,3 +465,19 @@
 - [ ] True custom unit support (MB, KB, GB, min in keyset) — requires gRPC payment processor or CDK upstream fix
 - [ ] Routstr AI inference via cashu Python lib — keyset ID format mismatch. Pre-built Docker image, needs upstream update or custom build
 - [ ] Install `websocat` for full Playwright WebSocket tests (low priority, HTTP checks sufficient)
+
+### Strato Email Delivery + Vote Link (Nov 2026)
+
+- [x] **Strato DNS role** — `cloudflare_email_dns` and `56-email-dns.yml`
+- [x] **DNS applied** — MX `smtp.rzone.de`, SPF `_spf.strato.com`, DKIM 0002/0003, DMARC `p=none`
+- [x] **DNS verification** — `scripts/verify-email-dns.sh` passes via Cloudflare DoH
+- [x] **SMTP credential** — `strato-smtp` in the Hermes trust root; `STRATO_CHECK_ONLY=1` returns `SMTP AUTH OK`
+- [x] **Admission email** — UI harness send delivered with correct code, link and expiry
+- [x] **Authentication** — SPF, DKIM (0002 + 0003), DMARC and ARC pass
+- [x] **External test** — plain message accepted by Strato for `auditablevoting@embedsmart.de`; recipient confirmed receipt
+- [x] **Vote link** — `vote.orangesync.tech` Caddy vhost live on vps2; certificate obtained; HTTP 200
+- [x] **Stale DNS** — removed `vote` A record `66.92.204.38`; removed `vote` from shared subdomains; vps2-only task added
+- [ ] **Deploy current static build** to `/srv/tollgate/auditable-voting`
+- [ ] **Full coordinator pilot** — send from the published questionnaire UI
+- [ ] **2–3 resident pilot** and inbox/spam check
+- [ ] **Rotate the SMTP password** — user declined for now; credential remains in trust root

@@ -325,3 +325,39 @@ All changes are in `web/src/SimpleAuditorApp.tsx` only.
 | Unit | pytest | Registry, event validator, gRPC client, audit log, daemon |
 | Integration | Bash + pytest | Package imports, full pytest suite, service health |
 | E2E | Playwright (TypeScript) | API endpoints, dashboard UI, mint REST API, TLS |
+
+## Strato Email Delivery and Vote Link (Nov 2026)
+
+### Goal
+
+Deliver auditable-voting admission emails through Strato SMTP from the local
+companion, and serve the voter app at `vote.orangesync.tech` from vps2.
+
+### DNS
+
+- MX: `smtp.rzone.de` priority 5. The old `mx01/mx02.strato.de` targets are NXDOMAIN.
+- SPF: `v=spf1 include:_spf.strato.com ~all`.
+- DKIM: CNAMEs for `strato-dkim-0002` and `strato-dkim-0003`.
+- DMARC: `v=DMARC1; p=none; pct=100`.
+- `vote.orangesync.tech` A record: vps2 only. The dead vps1 `.38` record was removed and `vote` was removed from `cloudflare_shared_subdomains` so a future run cannot recreate it.
+
+### Caddy
+
+Added a `vote.orangesync.tech` vhost on vps2 serving
+`/srv/tollgate/auditable-voting` with automatic HTTPS. The active config is
+`/etc/caddy/Caddyfile`; the old `/opt/tollgate/caddy` Docker config is not the
+running service.
+
+### Email
+
+The PR43 companion uses `smtp.strato.de:465` with the trust-root
+`strato-smtp` secret. A UI harness admission email and a plain external test
+were delivered; SPF, both DKIM selectors, DMARC and ARC passed.
+
+### Follow-ups
+
+- Deploy the current static build to `vote.orangesync.tech`.
+- Run a full coordinator pilot and a 2–3 resident batch.
+- Monitor Strato throttling and inbox placement.
+- Keep the SMTP credential in the trust root; the user declined rotation after
+  the initial chat exposure.
