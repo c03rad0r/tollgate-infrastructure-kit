@@ -7,3 +7,4 @@
   gather_facts: yes
   roles:
     - cloudflare_dns
+    - cloudflare_email_dns
