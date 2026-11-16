@@ -9,6 +9,7 @@ ExecStart={{ voting_worker_binary }}
 Environment=WORKER_NSEC={{ worker_nsec.stdout }}
 Environment=WORKER_STATE_DIR={{ voting_worker_state_dir }}
 Environment=WORKER_RELAYS={{ voting_worker_relays | join(',') }}
+Environment=WORKER_DM_RELAYS={{ voting_worker_dm_relays | join(',') }}
 Environment=COORDINATOR_NPUB={{ voting_worker_coordinator_npub }}
 Environment=RUST_LOG=info
 Restart=on-failure

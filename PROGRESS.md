@@ -481,3 +481,15 @@
 - [ ] **Full coordinator pilot** — send from the published questionnaire UI
 - [ ] **2–3 resident pilot** and inbox/spam check
 - [ ] **Rotate the SMTP password** — user declined for now; credential remains in trust root
+
+### Ballot Credential Worker Repair (Nov 2026)
+
+- [x] **Identified mismatch** — coordinator delegated to `npub18xnvgf...`; vps2 worker is `npub1crzlqj...`
+- [x] **Updated vps2 worker** — current coordinator `npub1asmhda...`, working relays, `WORKER_DM_RELAYS`
+- [x] **Reset worker state** — backed up old `state.json`, removed stale election state
+- [x] **Restarted worker** — active; connected to vm-1734, primal, nostr.info, nos.social, momostr, azzamo
+- [x] **Updated Ansible role** — relays and DM relays match the live service
+- [ ] **Revoke stale delegation** in coordinator Guardian
+- [ ] **Confirm live worker** `npub1crzlqj...`
+- [ ] **Retest ballot issuance** with a fresh admission code and voter session
+

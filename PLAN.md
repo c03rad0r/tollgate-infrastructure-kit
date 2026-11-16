@@ -361,3 +361,22 @@ were delivered; SPF, both DKIM selectors, DMARC and ARC passed.
 - Monitor Strato throttling and inbox placement.
 - Keep the SMTP credential in the trust root; the user declined rotation after
   the initial chat exposure.
+
+## Ballot Credential Issuance — Worker Repair (Nov 2026)
+
+The voter accepted an admission code but stayed on **Waiting for ballot
+credential** because the coordinator delegated to a worker that was not running.
+
+- Current coordinator: `npub1asmhda340d92t8284tzrud6sgxyd0xd5xv3pz6n8fja3d0cuqecs9vsjsa`
+- Actual vps2 worker: `npub1crzlqjps3hnax997gfvvxwjzaqy4vq89k84k2ehuftyccqxj6phqpw94xj`
+- Stale delegated worker: `npub18xnvgfzgnls06s54eyszu6tet5yfqqys02ks70x03drykx9zzmhs4txsr7`
+
+The vps2 worker was configured for an older coordinator/election and its relay
+list omitted `wss://vm-1734.lnvps.cloud/`. The service was updated to the current
+coordinator, the relay list was corrected, the state was reset, and the worker
+was restarted.
+
+Remaining operator step: revoke the stale delegation in the coordinator Guardian
+screen, select/confirm the live worker `npub1crzlqj...`, and retest with a fresh
+admission code and voter session.
+
