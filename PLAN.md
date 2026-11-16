@@ -380,3 +380,4 @@ Remaining operator step: revoke the stale delegation in the coordinator Guardian
 screen, select/confirm the live worker `npub1crzlqj...`, and retest with a fresh
 admission code and voter session.
 
+Client and worker DM defaults include `wss://relay.primal.net` because the other default DM relays are unreachable or require AUTH from vps2. The coordinator must reload the app before the worker heartbeat can be discovered.

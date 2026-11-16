@@ -493,3 +493,4 @@
 - [ ] **Confirm live worker** `npub1crzlqj...`
 - [ ] **Retest ballot issuance** with a fresh admission code and voter session
 
+- [x] **Client DM defaults** — added `wss://relay.primal.net` so the coordinator can discover the live worker heartbeat; focused UI tests pass
