@@ -106,7 +106,7 @@
     cf_email_spf_records: >-
       {{ cf_email_root_txt
          | selectattr('content', 'defined')
-         | selectattr('content', 'match', '^v=spf1')
+         | selectattr('content', 'match', '^"?v=spf1')
          | list }}
   delegate_to: localhost
   become: false
